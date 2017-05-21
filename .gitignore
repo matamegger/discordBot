@@ -4,6 +4,9 @@
 *.so
 
 # Folders
+download
+settings
+sounds
 _obj
 _test
 
