@@ -149,9 +149,6 @@ func SetupDiscordConnectionAndListener(token string) (discord *discordgo.Session
 }
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
-	fmt.Println("pch", len(event.PrivateChannels))
-	fmt.Println("channel", event.PrivateChannels[0].ID, event.PrivateChannels[0].Name, event.PrivateChannels[0].Recipient.Username)
-	fmt.Println("friends", event.Relationships)
 	for _, s := range event.Settings.RestrictedGuilds {
 		fmt.Println("rg", s)
 	}
