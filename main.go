@@ -4,7 +4,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
+
+	"github.com/matamegger/discordBot/logging"
 )
 
 const (
@@ -25,6 +26,7 @@ const (
 )
 
 var (
+	log		   *logging.Logger
 	OWNER              string
 	BASEPATH           string
 	exit               chan bool
@@ -52,7 +54,7 @@ type command struct {
 }
 
 func (d *Settings) prepareAndLoad() {
-	fmt.Println("Loading data")
+	log.Info("Loading ")
 	data.sclock.Lock()
 	defer data.sclock.Unlock()
 	if d.Soundcollections == nil {
@@ -83,6 +85,8 @@ func initalize() {
 }
 
 func main() {
+	log = logging.NewLogger("discord_bot",os.Stdout,os.Stderr)
+	log.Info("Starting")
 	var (
 		Token = flag.String("t", "", "Discord Authentication Token")
 		Owner = flag.String("o", "", "Owner")
@@ -93,8 +97,8 @@ func main() {
 	if *Owner != "" {
 		OWNER = *Owner
 	} else {
-		fmt.Fprintln(os.Stderr, "Owner id must be set with -o")
-		return
+		log.Warning("Owner ID is not set!")
+		log.Notice("Set the owner ID with the -o parameter")
 	}
 
 	initalize()
@@ -113,26 +117,28 @@ func main() {
 	exit = make(chan bool, 1)
 	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
 	go func() {
-		fmt.Println("Signal: ", <-c)
+		log.Debugf("Signal: %s", <-c)
 		exit <- true
 	}()
 	<-exit
 
-	fmt.Print("Closing connection...")
+
+	log.Debug("Closing discord connection...")
 	err = discord.Close()
 	if err != nil {
-		fmt.Println("error:\n", err)
+		log.Errorf("Error closing discord connection > %s",err)
 	}
 	saveSettings()
 
-	fmt.Println("exit")
+	log.Info("Shutdown down")
 }
 
 //Creates a session, adds listeners and starts the session
 func SetupDiscordConnectionAndListener(token string) (discord *discordgo.Session, err error) {
+	log.Debugf("Creating Bot with token=%s",token)
 	discord, err = discordgo.New("Bot " + token)
 	if err != nil {
-		fmt.Println("Error creating Discord session: ", err)
+		log.Errorf("Error creating discord session > %s",err)
 		return
 	}
 	// Register Handler
@@ -143,25 +149,23 @@ func SetupDiscordConnectionAndListener(token string) (discord *discordgo.Session
 	// Open the websocket and begin listening.
 	err = discord.Open()
 	if err != nil {
-		fmt.Println("error opening connection,", err)
+		log.Errorf("Error opening discord connection > %s",err)
 	}
 	return
 }
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
-	for _, s := range event.Settings.RestrictedGuilds {
-		fmt.Println("rg", s)
-	}
-
 	//Set status
+	var status string
 	if BUILD > data.Build {
 		data.Build = BUILD
 		data.changed = true
-		s.UpdateStatus(0, "Updated to "+strconv.Itoa(BUILD))
+		status = "Updated to "+strconv.Itoa(BUILD)
 	} else {
-		s.UpdateStatus(0, "Lurking around")
+		status = "Lurking around"
 	}
-
+	log.Infof("Set status to: %s",status)
+	s.UpdateStatus(0, status)
 }
 
 func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -177,7 +181,7 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
-	fmt.Println("guildname", event.Name)
+	log.Debugf("Guild created: %s", event.Name)
 	//TODO
 }
 
@@ -189,7 +193,7 @@ func loadSettings() {
 	}
 	d, err := LoadDataFromDisk(cFile)
 	if err != nil {
-		fmt.Println("Error Loading settings", err)
+		log.Errorf("Error loading settings > %s", err)
 	}
 	data = d
 }
@@ -199,10 +203,10 @@ func saveSettings() {
 		return
 	}
 	cFile := BASEPATH + SETTINGS_FOLDER + string(filepath.Separator) + COMMAND_FILE
-	fmt.Println("saving data at: ", cFile)
+	log.Debugf("Saving settings at: %s",cFile)
 	err := SaveDataToDisk(cFile)
 	if err != nil {
-		fmt.Println("Error saving settings")
+		log.Error("Error saving settings")
 	}
 }
 
@@ -210,7 +214,7 @@ func SaveDataToDisk(path string) (err error) {
 	file, err := os.Create(path)
 	defer file.Close()
 	if err != nil {
-		fmt.Println("error")
+		log.Errorf("Error creating/truncating file > %s",path)
 		return
 	}
 	data.sclock.RLock()
@@ -223,7 +227,7 @@ func LoadDataFromDisk(path string) (d Settings, err error) {
 	file, err := os.Open(path)
 	defer file.Close()
 	if err != nil {
-		fmt.Println("error opening")
+		log.Errorf("Error opening file > %s",path)
 		return
 	}
 	err = json.NewDecoder(file).Decode(&d)
