@@ -18,9 +18,7 @@ func processCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	//TODO
 	col := data.Soundcollections[parts[0]]
-	fmt.Println("part0", parts[0])
 	if col != nil {
-		fmt.Println("notnull")
 		var sound *Sound
 		if len(parts) > 1 {
 			sound = col.GetSound(parts[1])
@@ -28,7 +26,6 @@ func processCommand(s *discordgo.Session, m *discordgo.Message) {
 		if sound == nil {
 			sound = col.GetRandomSound()
 		}
-		fmt.Println("soundname", sound.Name)
 		channel, _ := s.State.Channel(m.ChannelID)
 		guild, err := s.State.Guild(channel.GuildID)
 		if guild == nil || err != nil {

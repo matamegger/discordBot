@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"math/rand"
 	"os"
@@ -46,7 +45,7 @@ func NewPlay(sound *Sound, guildID, channelID string) *Play {
 
 // Loads the sound data of all Sounds in the SoundCollection
 func (sc *SoundCollection) Load() {
-	fmt.Println("Loading Collection", sc.Name)
+	log.Infof("Loading collection %s", sc.Name)
 	for _, s := range sc.Sounds {
 		s.Load()
 	}
@@ -80,11 +79,11 @@ func NewSound(name string, file string) *Sound {
 
 // Loads the Sounddata of the sound into the memory
 func (s *Sound) Load() (err error) {
-	fmt.Println("Loading Sound", s.Name)
+	log.Infof("Loading sound %s", s.Name)
 	file, err := os.Open(s.File)
 
 	if err != nil {
-		fmt.Println("Error opening dca file: ", err)
+		log.Errorf("Error opening dca file > %s", err)
 		return
 	}
 
@@ -104,7 +103,7 @@ func (s *Sound) Load() (err error) {
 		}
 
 		if err != nil {
-			fmt.Println("Error reading from dca file:", err)
+			log.Errorf("Error reading from dca file > %s", err)
 			return
 		}
 
@@ -114,7 +113,7 @@ func (s *Sound) Load() (err error) {
 
 		// Should not be any end of file errors
 		if err != nil {
-			fmt.Println("Error reading from dca file:", err)
+			log.Errorf("Error reading from dca file > %s", err)
 			return
 		}
 
