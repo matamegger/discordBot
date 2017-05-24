@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"fmt"
 )
 
 func processCommand(s *discordgo.Session, m *discordgo.Message) {
