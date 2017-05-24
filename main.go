@@ -12,7 +12,6 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
-
 	"github.com/matamegger/discordBot/logging"
 )
 
@@ -26,7 +25,7 @@ const (
 )
 
 var (
-	log		   *logging.Logger
+	log                *logging.Logger
 	OWNER              string
 	BASEPATH           string
 	exit               chan bool
@@ -85,7 +84,7 @@ func initalize() {
 }
 
 func main() {
-	log = logging.NewLogger("discord_bot",os.Stdout,os.Stderr)
+	log = logging.NewLogger("discord_bot", os.Stdout, os.Stderr)
 	log.Info("Starting")
 	var (
 		Token = flag.String("t", "", "Discord Authentication Token")
@@ -122,11 +121,10 @@ func main() {
 	}()
 	<-exit
 
-
 	log.Debug("Closing discord connection...")
 	err = discord.Close()
 	if err != nil {
-		log.Errorf("Error closing discord connection > %s",err)
+		log.Errorf("Error closing discord connection > %s", err)
 	}
 	saveSettings()
 
@@ -135,10 +133,10 @@ func main() {
 
 //Creates a session, adds listeners and starts the session
 func SetupDiscordConnectionAndListener(token string) (discord *discordgo.Session, err error) {
-	log.Debugf("Creating Bot with token=%s",token)
+	log.Debugf("Creating Bot with token=%s", token)
 	discord, err = discordgo.New("Bot " + token)
 	if err != nil {
-		log.Errorf("Error creating discord session > %s",err)
+		log.Errorf("Error creating discord session > %s", err)
 		return
 	}
 	// Register Handler
@@ -149,7 +147,7 @@ func SetupDiscordConnectionAndListener(token string) (discord *discordgo.Session
 	// Open the websocket and begin listening.
 	err = discord.Open()
 	if err != nil {
-		log.Errorf("Error opening discord connection > %s",err)
+		log.Errorf("Error opening discord connection > %s", err)
 	}
 	return
 }
@@ -160,11 +158,11 @@ func onReady(s *discordgo.Session, event *discordgo.Ready) {
 	if BUILD > data.Build {
 		data.Build = BUILD
 		data.changed = true
-		status = "Updated to "+strconv.Itoa(BUILD)
+		status = "Updated to " + strconv.Itoa(BUILD)
 	} else {
 		status = "Lurking around"
 	}
-	log.Infof("Set status to: %s",status)
+	log.Infof("Set status to: %s", status)
 	s.UpdateStatus(0, status)
 }
 
@@ -203,7 +201,7 @@ func saveSettings() {
 		return
 	}
 	cFile := BASEPATH + SETTINGS_FOLDER + string(filepath.Separator) + COMMAND_FILE
-	log.Debugf("Saving settings at: %s",cFile)
+	log.Debugf("Saving settings at: %s", cFile)
 	err := SaveDataToDisk(cFile)
 	if err != nil {
 		log.Error("Error saving settings")
@@ -214,7 +212,7 @@ func SaveDataToDisk(path string) (err error) {
 	file, err := os.Create(path)
 	defer file.Close()
 	if err != nil {
-		log.Errorf("Error creating/truncating file > %s",path)
+		log.Errorf("Error creating/truncating file > %s", path)
 		return
 	}
 	data.sclock.RLock()
@@ -227,7 +225,7 @@ func LoadDataFromDisk(path string) (d Settings, err error) {
 	file, err := os.Open(path)
 	defer file.Close()
 	if err != nil {
-		log.Errorf("Error opening file > %s",path)
+		log.Errorf("Error opening file > %s", path)
 		return
 	}
 	err = json.NewDecoder(file).Decode(&d)

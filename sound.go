@@ -79,11 +79,11 @@ func NewSound(name string, file string) *Sound {
 
 // Loads the Sounddata of the sound into the memory
 func (s *Sound) Load() (err error) {
-	log.Infof("Loading sound %s",s.Name)
+	log.Infof("Loading sound %s", s.Name)
 	file, err := os.Open(s.File)
 
 	if err != nil {
-		log.Errorf("Error opening dca file > %s",err)
+		log.Errorf("Error opening dca file > %s", err)
 		return
 	}
 
@@ -103,7 +103,7 @@ func (s *Sound) Load() (err error) {
 		}
 
 		if err != nil {
-			log.Errorf("Error reading from dca file > %s",err)
+			log.Errorf("Error reading from dca file > %s", err)
 			return
 		}
 
@@ -113,7 +113,7 @@ func (s *Sound) Load() (err error) {
 
 		// Should not be any end of file errors
 		if err != nil {
-			log.Errorf("Error reading from dca file > %s",err)
+			log.Errorf("Error reading from dca file > %s", err)
 			return
 		}
 

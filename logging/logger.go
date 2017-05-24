@@ -12,18 +12,18 @@ type Logger struct {
 func NewLogger(name string, out io.Writer, err io.Writer) *Logger {
 	logger, _ := loglib.GetLogger(name)
 	format, _ := loglib.NewStringFormatter(`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:04d}%{color:reset} %{message}`)
-	logger.ExtraCalldepth=1
+	logger.ExtraCalldepth = 1
 
-	outBackend := loglib.NewLogBackend(out,"",0)
-	errBackend := loglib.NewLogBackend(err,"",0)
+	outBackend := loglib.NewLogBackend(out, "", 0)
+	errBackend := loglib.NewLogBackend(err, "", 0)
 
-	outBackendFormatter := loglib.NewBackendFormatter(outBackend,format)
-	errBackendFormatter := loglib.NewBackendFormatter(errBackend,format)
+	outBackendFormatter := loglib.NewBackendFormatter(outBackend, format)
+	errBackendFormatter := loglib.NewBackendFormatter(errBackend, format)
 
 	errBackendLeveled := loglib.AddModuleLevel(errBackendFormatter)
-	errBackendLeveled.SetLevel(loglib.ERROR,"")
+	errBackendLeveled.SetLevel(loglib.ERROR, "")
 
-	loglib.SetBackend(outBackendFormatter,errBackendLeveled)
+	loglib.SetBackend(outBackendFormatter, errBackendLeveled)
 	return &Logger{log: logger}
 }
 
