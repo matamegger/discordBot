@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"os"
 	"os/signal"
@@ -187,9 +186,11 @@ func loadSettings() {
 	cFile := BASEPATH + SETTINGS_FOLDER + string(filepath.Separator) + COMMAND_FILE
 	exist, _ := exists(cFile)
 	if !exist {
+		log.Debug("Can't load settings, because the file does not exist.")
 		return
 	}
-	d, err := LoadDataFromDisk(cFile)
+	var d Settings
+	err := LoadObjectFromJsonFile(cFile,&d);
 	if err != nil {
 		log.Errorf("Error loading settings > %s", err)
 	}
@@ -202,32 +203,10 @@ func saveSettings() {
 	}
 	cFile := BASEPATH + SETTINGS_FOLDER + string(filepath.Separator) + COMMAND_FILE
 	log.Debugf("Saving settings at: %s", cFile)
-	err := SaveDataToDisk(cFile)
+	data.sclock.RLock()
+	defer data.sclock.RUnlock()
+	err := SaveObjectAsJsonToFile(cFile, &data)
 	if err != nil {
 		log.Error("Error saving settings")
 	}
-}
-
-func SaveDataToDisk(path string) (err error) {
-	file, err := os.Create(path)
-	defer file.Close()
-	if err != nil {
-		log.Errorf("Error creating/truncating file > %s", path)
-		return
-	}
-	data.sclock.RLock()
-	defer data.sclock.RUnlock()
-	err = json.NewEncoder(file).Encode(data)
-	return
-}
-
-func LoadDataFromDisk(path string) (d Settings, err error) {
-	file, err := os.Open(path)
-	defer file.Close()
-	if err != nil {
-		log.Errorf("Error opening file > %s", path)
-		return
-	}
-	err = json.NewDecoder(file).Decode(&d)
-	return
 }
