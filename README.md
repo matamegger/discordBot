@@ -10,9 +10,9 @@ It's yet not sure in which direction this project will go. Appreciate any constr
 - [dca](https://github.com/bwmarrin/dca)
 
 ### System
-- [ffmpeg](https://ffmpeg.org/)
+- [ffmpeg](https://ffmpeg.org/) / opus
 
-[ffmpeg](https://ffmpeg.org/) and [dca](https://github.com/bwmarrin/dca) are used to dynamically encode and add new sounds to the "soundboard" function.
+[dca](https://github.com/bwmarrin/dca) (and its dependencies ffmpeg/opus) are used to dynamically encode and add new sounds to the "soundboard" function.
 
 ## Installing
 
@@ -25,13 +25,10 @@ This assumes you already have a working Go environment, if not please see
 # Installing the bot
 go get github.com/matamegger/discordBot
 go install github.com/matamegger/discordBot
-
-# Installing dca
-go get github.com/bwmarrin/dca
-go install github.com/bwmarrin/dca
 ```
 
-Finally [ffmpeg](https://ffmpeg.org/) must be installed.
+[discordgo](https://github.com/bwmarrin/discordgo) and [go-logging](https://github.com/op/go-logging) should be installed automatically.
+However, you have to install [dca](https://github.com/bwmarrin/dca) and its dependencies manually.
 
 ## Starting/Configurating
 
