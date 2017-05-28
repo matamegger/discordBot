@@ -20,7 +20,7 @@ const (
 	SETTINGS_FILE          = "settings.json"
 	BOT_NAME               = "JoinBot"
 	MAX_QUEUE_SIZE         = 5
-	BUILD                  = 1
+	BUILD                  = 2
 )
 
 var (
