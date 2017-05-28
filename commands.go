@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"path/filepath"
 )
 
 func processCommand(s *discordgo.Session, m *discordgo.Message) {
@@ -18,9 +19,7 @@ func processCommand(s *discordgo.Session, m *discordgo.Message) {
 
 	//TODO
 	col := data.Soundcollections[parts[0]]
-	fmt.Println("part0", parts[0])
 	if col != nil {
-		fmt.Println("notnull")
 		var sound *Sound
 		if len(parts) > 1 {
 			sound = col.GetSound(parts[1])
@@ -28,7 +27,6 @@ func processCommand(s *discordgo.Session, m *discordgo.Message) {
 		if sound == nil {
 			sound = col.GetRandomSound()
 		}
-		fmt.Println("soundname", sound.Name)
 		channel, _ := s.State.Channel(m.ChannelID)
 		guild, err := s.State.Guild(channel.GuildID)
 		if guild == nil || err != nil {
@@ -163,7 +161,6 @@ func WhoIsOwner(s *discordgo.Session, m *discordgo.Message, parts []string) {
 func Kill(s *discordgo.Session, m *discordgo.Message, parts []string) {
 	if m.Author.ID == OWNER {
 		s.ChannelMessageSend(m.ChannelID, "Yes, Sir!\nI will kill myself.")
-		saveSettings()
 		exit <- true
 	}
 }
@@ -192,7 +189,8 @@ func AddSound(s *discordgo.Session, m *discordgo.Message, parts []string) {
 	}
 	if len(m.Attachments) > 0 {
 		if len(parts) > 2 {
-			file, err := GetSoundByURL(m.Attachments[0].URL, parts[1], parts[2])
+			path := filepath.Join(BASEPATH, RELATIVE_SOUNDS_PATH)
+			file, err := GetSoundByURL(m.Attachments[0].URL, path, parts[1]+"-"+parts[2])
 			if err != nil {
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I got rekt up")
 			} else {

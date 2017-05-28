@@ -2,9 +2,7 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -13,18 +11,20 @@ import (
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/matamegger/discordBot/logging"
 )
 
 const (
-	SETTINGS_FOLDER = "settings"
-	COMMAND_FILE    = "commands.json"
-	SOUNDS_FILE     = "sounds.json"
-	BOT_NAME        = "JoinBot"
-	MAX_QUEUE_SIZE  = 5
-	BUILD           = 1
+	RELATIVE_SETTINGS_PATH = "settings"
+	RELATIVE_SOUNDS_PATH   = "sounds"
+	SETTINGS_FILE          = "settings.json"
+	BOT_NAME               = "JoinBot"
+	MAX_QUEUE_SIZE         = 5
+	BUILD                  = 2
 )
 
 var (
+	log                *logging.Logger
 	OWNER              string
 	BASEPATH           string
 	exit               chan bool
@@ -52,7 +52,7 @@ type command struct {
 }
 
 func (d *Settings) prepareAndLoad() {
-	fmt.Println("Loading data")
+	log.Info("Loading ")
 	data.sclock.Lock()
 	defer data.sclock.Unlock()
 	if d.Soundcollections == nil {
@@ -67,7 +67,7 @@ func (d *Settings) prepareAndLoad() {
 func initalize() {
 	ex, err := os.Executable()
 	if err == nil {
-		BASEPATH = filepath.Dir(ex) + string(os.PathSeparator)
+		BASEPATH = filepath.Dir(ex)
 	}
 	addCommand("kill", Kill)
 	addCommand("get", Get)
@@ -83,6 +83,8 @@ func initalize() {
 }
 
 func main() {
+	log = logging.NewLogger("discord_bot", os.Stdout, os.Stderr)
+	log.Info("Starting")
 	var (
 		Token = flag.String("t", "", "Discord Authentication Token")
 		Owner = flag.String("o", "", "Owner")
@@ -93,10 +95,14 @@ func main() {
 	if *Owner != "" {
 		OWNER = *Owner
 	} else {
-		fmt.Fprintln(os.Stderr, "Owner id must be set with -o")
-		return
+		log.Warning("Owner ID is not set!")
+		log.Notice("Set the owner ID with the -o parameter")
 	}
 
+	if *Token == "" {
+		log.Error("Token ID is not set!")
+		return
+	}
 	initalize()
 
 	discord, err := SetupDiscordConnectionAndListener(*Token)
@@ -113,26 +119,27 @@ func main() {
 	exit = make(chan bool, 1)
 	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
 	go func() {
-		fmt.Println("Signal: ", <-c)
+		log.Debugf("Signal: %s", <-c)
 		exit <- true
 	}()
 	<-exit
 
-	fmt.Print("Closing connection...")
+	log.Debug("Closing discord connection...")
 	err = discord.Close()
 	if err != nil {
-		fmt.Println("error:\n", err)
+		log.Errorf("Error closing discord connection > %s", err)
 	}
 	saveSettings()
 
-	fmt.Println("exit")
+	log.Info("Shutdown down")
 }
 
 //Creates a session, adds listeners and starts the session
 func SetupDiscordConnectionAndListener(token string) (discord *discordgo.Session, err error) {
+	log.Debugf("Creating Bot with token=%s", token)
 	discord, err = discordgo.New("Bot " + token)
 	if err != nil {
-		fmt.Println("Error creating Discord session: ", err)
+		log.Errorf("Error creating discord session > %s", err)
 		return
 	}
 	// Register Handler
@@ -143,25 +150,23 @@ func SetupDiscordConnectionAndListener(token string) (discord *discordgo.Session
 	// Open the websocket and begin listening.
 	err = discord.Open()
 	if err != nil {
-		fmt.Println("error opening connection,", err)
+		log.Errorf("Error opening discord connection > %s", err)
 	}
 	return
 }
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
-	for _, s := range event.Settings.RestrictedGuilds {
-		fmt.Println("rg", s)
-	}
-
 	//Set status
+	var status string
 	if BUILD > data.Build {
 		data.Build = BUILD
 		data.changed = true
-		s.UpdateStatus(0, "Updated to "+strconv.Itoa(BUILD))
+		status = "Updated to " + strconv.Itoa(BUILD)
 	} else {
-		s.UpdateStatus(0, "Lurking around")
+		status = "Lurking around"
 	}
-
+	log.Infof("Set status to: %s", status)
+	s.UpdateStatus(0, status)
 }
 
 func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -177,19 +182,21 @@ func onMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
-	fmt.Println("guildname", event.Name)
+	log.Debugf("Guild created: %s", event.Name)
 	//TODO
 }
 
 func loadSettings() {
-	cFile := BASEPATH + SETTINGS_FOLDER + string(filepath.Separator) + COMMAND_FILE
+	cFile := filepath.Join(BASEPATH, RELATIVE_SETTINGS_PATH, SETTINGS_FILE)
 	exist, _ := exists(cFile)
 	if !exist {
+		log.Debug("Can't load settings, because the file does not exist.")
 		return
 	}
-	d, err := LoadDataFromDisk(cFile)
+	var d Settings
+	err := LoadObjectFromJsonFile(cFile, &d)
 	if err != nil {
-		fmt.Println("Error Loading settings", err)
+		log.Errorf("Error loading settings > %s", err)
 	}
 	data = d
 }
@@ -198,34 +205,12 @@ func saveSettings() {
 	if !data.changed {
 		return
 	}
-	cFile := BASEPATH + SETTINGS_FOLDER + string(filepath.Separator) + COMMAND_FILE
-	fmt.Println("saving data at: ", cFile)
-	err := SaveDataToDisk(cFile)
-	if err != nil {
-		fmt.Println("Error saving settings")
-	}
-}
-
-func SaveDataToDisk(path string) (err error) {
-	file, err := os.Create(path)
-	defer file.Close()
-	if err != nil {
-		fmt.Println("error")
-		return
-	}
+	cFile := filepath.Join(BASEPATH, RELATIVE_SETTINGS_PATH, SETTINGS_FILE)
+	log.Debugf("Saving settings at: %s", cFile)
 	data.sclock.RLock()
 	defer data.sclock.RUnlock()
-	err = json.NewEncoder(file).Encode(data)
-	return
-}
-
-func LoadDataFromDisk(path string) (d Settings, err error) {
-	file, err := os.Open(path)
-	defer file.Close()
+	err := SaveObjectAsJsonToFile(cFile, &data)
 	if err != nil {
-		fmt.Println("error opening")
-		return
+		log.Error("Error saving settings")
 	}
-	err = json.NewDecoder(file).Decode(&d)
-	return
 }
