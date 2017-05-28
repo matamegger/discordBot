@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"path/filepath"
 )
 
 func processCommand(s *discordgo.Session, m *discordgo.Message) {
@@ -160,7 +161,6 @@ func WhoIsOwner(s *discordgo.Session, m *discordgo.Message, parts []string) {
 func Kill(s *discordgo.Session, m *discordgo.Message, parts []string) {
 	if m.Author.ID == OWNER {
 		s.ChannelMessageSend(m.ChannelID, "Yes, Sir!\nI will kill myself.")
-		saveSettings()
 		exit <- true
 	}
 }
@@ -189,7 +189,8 @@ func AddSound(s *discordgo.Session, m *discordgo.Message, parts []string) {
 	}
 	if len(m.Attachments) > 0 {
 		if len(parts) > 2 {
-			file, err := GetSoundByURL(m.Attachments[0].URL, parts[1], parts[2])
+			path := filepath.Join(BASEPATH, RELATIVE_SOUNDS_PATH)
+			file, err := GetSoundByURL(m.Attachments[0].URL, path, parts[1]+"-"+parts[2])
 			if err != nil {
 				s.ChannelMessageSend(m.ChannelID, "Sorry, I got rekt up")
 			} else {

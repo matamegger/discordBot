@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"os"
 	"os/signal"
@@ -16,12 +15,12 @@ import (
 )
 
 const (
-	SETTINGS_FOLDER = "settings"
-	COMMAND_FILE    = "commands.json"
-	SOUNDS_FILE     = "sounds.json"
-	BOT_NAME        = "JoinBot"
-	MAX_QUEUE_SIZE  = 5
-	BUILD           = 1
+	RELATIVE_SETTINGS_PATH = "settings"
+	RELATIVE_SOUNDS_PATH   = "sounds"
+	COMMAND_FILE           = "commands.json"
+	BOT_NAME               = "JoinBot"
+	MAX_QUEUE_SIZE         = 5
+	BUILD                  = 1
 )
 
 var (
@@ -68,7 +67,7 @@ func (d *Settings) prepareAndLoad() {
 func initalize() {
 	ex, err := os.Executable()
 	if err == nil {
-		BASEPATH = filepath.Dir(ex) + string(os.PathSeparator)
+		BASEPATH = filepath.Dir(ex)
 	}
 	addCommand("kill", Kill)
 	addCommand("get", Get)
@@ -100,6 +99,10 @@ func main() {
 		log.Notice("Set the owner ID with the -o parameter")
 	}
 
+	if *Token == "" {
+		log.Error("Token ID is not set!")
+		return
+	}
 	initalize()
 
 	discord, err := SetupDiscordConnectionAndListener(*Token)
@@ -184,12 +187,14 @@ func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 }
 
 func loadSettings() {
-	cFile := BASEPATH + SETTINGS_FOLDER + string(filepath.Separator) + COMMAND_FILE
+	cFile := filepath.Join(BASEPATH, RELATIVE_SETTINGS_PATH, COMMAND_FILE)
 	exist, _ := exists(cFile)
 	if !exist {
+		log.Debug("Can't load settings, because the file does not exist.")
 		return
 	}
-	d, err := LoadDataFromDisk(cFile)
+	var d Settings
+	err := LoadObjectFromJsonFile(cFile, &d)
 	if err != nil {
 		log.Errorf("Error loading settings > %s", err)
 	}
@@ -200,34 +205,12 @@ func saveSettings() {
 	if !data.changed {
 		return
 	}
-	cFile := BASEPATH + SETTINGS_FOLDER + string(filepath.Separator) + COMMAND_FILE
+	cFile := filepath.Join(BASEPATH, RELATIVE_SETTINGS_PATH, COMMAND_FILE)
 	log.Debugf("Saving settings at: %s", cFile)
-	err := SaveDataToDisk(cFile)
+	data.sclock.RLock()
+	defer data.sclock.RUnlock()
+	err := SaveObjectAsJsonToFile(cFile, &data)
 	if err != nil {
 		log.Error("Error saving settings")
 	}
-}
-
-func SaveDataToDisk(path string) (err error) {
-	file, err := os.Create(path)
-	defer file.Close()
-	if err != nil {
-		log.Errorf("Error creating/truncating file > %s", path)
-		return
-	}
-	data.sclock.RLock()
-	defer data.sclock.RUnlock()
-	err = json.NewEncoder(file).Encode(data)
-	return
-}
-
-func LoadDataFromDisk(path string) (d Settings, err error) {
-	file, err := os.Open(path)
-	defer file.Close()
-	if err != nil {
-		log.Errorf("Error opening file > %s", path)
-		return
-	}
-	err = json.NewDecoder(file).Decode(&d)
-	return
 }
