@@ -17,10 +17,10 @@ import (
 const (
 	RELATIVE_SETTINGS_PATH = "settings"
 	RELATIVE_SOUNDS_PATH   = "sounds"
-	COMMAND_FILE           = "commands.json"
+	SETTINGS_FILE          = "settings.json"
 	BOT_NAME               = "JoinBot"
 	MAX_QUEUE_SIZE         = 5
-	BUILD                  = 1
+	BUILD                  = 2
 )
 
 var (
@@ -187,7 +187,7 @@ func onGuildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 }
 
 func loadSettings() {
-	cFile := filepath.Join(BASEPATH, RELATIVE_SETTINGS_PATH, COMMAND_FILE)
+	cFile := filepath.Join(BASEPATH, RELATIVE_SETTINGS_PATH, SETTINGS_FILE)
 	exist, _ := exists(cFile)
 	if !exist {
 		log.Debug("Can't load settings, because the file does not exist.")
@@ -205,7 +205,7 @@ func saveSettings() {
 	if !data.changed {
 		return
 	}
-	cFile := filepath.Join(BASEPATH, RELATIVE_SETTINGS_PATH, COMMAND_FILE)
+	cFile := filepath.Join(BASEPATH, RELATIVE_SETTINGS_PATH, SETTINGS_FILE)
 	log.Debugf("Saving settings at: %s", cFile)
 	data.sclock.RLock()
 	defer data.sclock.RUnlock()
