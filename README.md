@@ -5,9 +5,9 @@ It's yet not sure in which direction this project will go. Appreciate any constr
 ## Dependencies
 
 ### Go
-- [discordgo](https://github.com/bwmarrin/discordgo)
-- [go-logging](https://github.com/op/go-logging)
-- [dca](https://github.com/bwmarrin/dca)
+- [discordgo](https://github.com/bwmarrin/discordgo) v0.16.0
+- [go-logging](https://github.com/op/go-logging) as by Mar 15, 2016
+- [dca](https://github.com/bwmarrin/dca) as by Jan 3, 2017
 
 ### System
 - [ffmpeg](https://ffmpeg.org/) / opus
